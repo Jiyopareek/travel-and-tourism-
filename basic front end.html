@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Tourism Planner Website</title>
+  <style>
+    /* Reset + base */
+    * { box-sizing: border-box; }
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 40px 20px;
+      display: flex;
+      justify-content: center;
+      min-height: 100vh;
+      align-items: flex-start;
+      transition: background 0.3s, color 0.3s;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    /* Background image with blur */
+    body::before {
+      content: "";
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: url('https://wallpaperaccess.com/full/2892675.jpg') no-repeat center center/cover;
+      filter: blur(6px);
+      z-index: -1;
+    }
+
+    body.dark {
+      color: #e6edf3;
+    }
+
+    /* Hamburger Menu Button */
+    .menu-button {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      width: 50px;
+      height: 50px;
+      background: rgba(255, 255, 255, 0.9);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(2, 48, 88, 0.1);
+      border-radius: 12px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      z-index: 1001;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    .menu-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+    }
+
+    body.dark .menu-button {
+      background: rgba(28, 33, 40, 0.9);
+      border: 1px solid rgba(240, 246, 252, 0.1);
+    }
+
+    .menu-button span {
+      width: 24px;
+      height: 3px;
+      background: #024870;
+      margin: 2px 0;
+      transition: all 0.3s ease;
+      border-radius: 2px;
+    }
+
+    body.dark .menu-button span {
+      background: #58a6ff;
+    }
+
+    .menu-button.active span:nth-child(1) {
+      transform: rotate(45deg) translate(6px, 6px);
+    }
+
+    .menu-button.active span:nth-child(2) {
+      opacity: 0;
+    }
+
+    .menu-button.active span:nth-child(3) {
+      transform: rotate(-45deg) translate(6px, -6px);
+    }
+
+    /* Sidebar */
+    .sidebar {
+      position: fixed;
+      top: 0;
+      left: -320px;
+      width: 320px;
+      height: 100vh;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(20px);
+      z-index: 1000;
+      transition: left 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 2px 0 15px rgba(0, 0, 0, 0.1);
+      border-right: 1px solid rgba(2, 48, 88, 0.1);
+    }
+
+    .sidebar.open {
+      left: 0;
+    }
+
+    body.dark .sidebar {
+      background: rgba(13, 17, 23, 0.95);
+      border-right: 1px solid rgba(240, 246, 252, 0.1);
+    }
+
+    .sidebar-header {
+      padding: 25px 20px 20px;
+      border-bottom: 1px solid rgba(2, 48, 88, 0.1);
+    }
+
+    body.dark .sidebar-header {
+      border-bottom: 1px solid rgba(240, 246, 252, 0.1);
+    }
+
+    .sidebar-header h2 {
+      margin: 0;
+      color: #024870;
+      font-size: 22px;
+      font-weight: 700;
+    }
+
+    body.dark .sidebar-header h2 {
+      color: #58a6ff;
+    }
+
+    .sidebar-header p {
+      margin: 5px 0 0 0;
+      color: #37607f;
+      font-size: 14px;
+      opacity: 0.8;
+    }
+
+    body.dark .sidebar-header p {
+      color: #8b949e;
+    }
+
+    .sidebar-menu {
+      padding: 20px 0;
+    }
+
+    .menu-item {
+      display: flex;
+      align-items: center;
+      padding: 15px 25px;
+      color: #024870;
+      text-decoration: none;
+      font-size: 16px;
+      font-weight: 500;
+      transition: all 0.2s ease;
+      border-left: 4px solid transparent;
+    }
+
+    .menu-item:hover {
+      background: rgba(2, 72, 112, 0.05);
+      border-left-color: #024870;
+      transform: translateX(5px);
+    }
+
+    body.dark .menu-item {
+      color: #e6edf3;
+    }
+
+    body.dark .menu-item:hover {
+      background: rgba(88, 166, 255, 0.1);
+      border-left-color: #58a6ff;
+    }
+
+    .menu-item-icon {
+      width: 24px;
+      height: 24px;
+      margin-right: 15px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+    }
+
+    /* Overlay */
+    .overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 999;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s ease;
+    }
+
+    .overlay.active {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    /* Main centered container */
+    .wrapper {
+      width: 100%;
+      max-width: 1000px;
+      transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .wrapper.sidebar-open {
+      transform: translateX(160px);
+    }
+
+    /* The big rounded rectangular box that contains everything */
+    .panel {
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(4px);
+      border-radius: 18px;
+      padding: 22px;
+      box-shadow: 0 10px 30px rgba(8, 40, 80, 0.15);
+      border: 1px solid rgba(2, 48, 88, 0.06);
+      transition: transform .12s ease, background 0.3s, color 0.3s;
+    }
+    .panel:hover { transform: translateY(-3px); }
+
+    body.dark .panel {
+      background: rgba(28, 33, 40, 0.9);
+      color: #e6edf3;
+      border: 1px solid rgba(240, 246, 252, 0.1);
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+    header h1 {
+      font-size: 20px;
+      margin: 0;
+      color: #023153;
+      transition: color 0.3s;
+    }
+    header p {
+      margin: 0;
+      font-size: 13px;
+      color: #37607f;
+      opacity: .9;
+      transition: color 0.3s;
+    }
+    body.dark header h1 { color: #58a6ff; }
+    body.dark header p { color: #8b949e; }
+
+    /* Tabs area */
+    .nav-tabs {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .tab {
+      background-color: transparent;
+      border: 1px solid transparent;
+      padding: 8px 14px;
+      cursor: pointer;
+      color: #024870;
+      font-weight: 600;
+      border-radius: 12px;
+      transition: all .15s ease;
+      font-size: 14px;
+    }
+    .tab:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 18px rgba(2, 72, 112, 0.06);
+    }
+    .tab.active {
+      background: linear-gradient(90deg, rgba(2,72,112,0.95), rgba(0,115,230,0.95));
+      color: #fff;
+      border: 1px solid rgba(0,0,0,0.06);
+    }
+    body.dark .tab { color: #e6edf3; }
+    body.dark .tab.active { background: linear-gradient(90deg, #238636, #2ea043); }
+
+    /* Search row */
+    .search-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 18px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .search-row input[type="text"] {
+      flex: 1 1 320px;
+      padding: 12px 14px;
+      font-size: 15px;
+      border: 1px solid rgba(2, 72, 112, 0.12);
+      border-radius: 10px;
+      outline: none;
+      transition: box-shadow .12s ease, border-color .12s ease, background 0.3s, color 0.3s;
+    }
+    .search-row input[type="text"]:focus {
+      border-color: rgba(0,115,230,0.8);
+      box-shadow: 0 6px 20px rgba(0,115,230,0.08);
+    }
+    body.dark .search-row input[type="text"] {
+      background: #0d1117;
+      color: #e6edf3;
+      border: 1px solid rgba(240,246,252,0.1);
+    }
+    .search-row button {
+      padding: 12px 18px;
+      background-color: #024870;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: 700;
+      min-width: 110px;
+      transition: background 0.3s;
+    }
+    .search-row button:hover { background-color: #0366a6; }
+    body.dark .search-row button { background-color: #238636; }
+    body.dark .search-row button:hover { background-color: #2ea043; }
+
+    /* Results section */
+    #results {
+      margin-top: 18px;
+      font-size: 15px;
+      color: #07324a;
+      min-height: 80px;
+      border-radius: 10px;
+      padding: 12px;
+      background: linear-gradient(180deg, rgba(245,250,255,0.6), rgba(250,252,255,0.6));
+      border: 1px dashed rgba(3, 60, 100, 0.04);
+      transition: background 0.3s, color 0.3s;
+    }
+    body.dark #results {
+      background: #161b22;
+      color: #e6edf3;
+      border: 1px dashed rgba(240,246,252,0.1);
+    }
+
+    .card {
+      display: inline-block;
+      width: 200px;
+      margin: 10px;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      background: #fff;
+      transition: transform 0.2s;
+    }
+    .card:hover { transform: translateY(-5px); }
+    .card img { width: 100%; height: 140px; object-fit: cover; }
+    .card p { margin: 8px; font-size: 14px; font-weight: 600; color: #024870; }
+
+    body.dark .card { background: #1c2128; color: #e6edf3; }
+    body.dark .card p { color: #e6edf3; }
+
+    /* Dark mode toggle */
+    .toggle-btn {
+      padding: 8px 14px;
+      background: #f1f5f9;
+      color: #024870;
+      border: 1px solid rgba(2,48,88,0.12);
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: background 0.3s, color 0.3s;
+    }
+    .toggle-btn:hover { background: #e2e8f0; }
+    body.dark .toggle-btn {
+      background: #21262d;
+      color: #e6edf3;
+      border: 1px solid rgba(240,246,252,0.1);
+    }
+    body.dark .toggle-btn:hover { background: #30363d; }
+
+    /* Mobile responsiveness */
+    @media (max-width: 768px) {
+      .wrapper.sidebar-open {
+        transform: none;
+      }
+      
+      .sidebar {
+        width: 280px;
+        left: -280px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Hamburger Menu Button -->
+  <div class="menu-button" onclick="toggleSidebar()">
+    <span></span>
+    <span></span>
+    <span></span>
+  </div>
+
+  <!-- Overlay -->
+  <div class="overlay" onclick="closeSidebar()"></div>
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <h2>Menu</h2>
+      <p>Navigate through our services</p>
+    </div>
+    <nav class="sidebar-menu">
+      <a href="#" class="menu-item" onclick="handleMenuClick('Plan your trip')">
+        <div class="menu-item-icon">🗓️</div>
+        Plan your trip
+      </a>
+      <a href="#" class="menu-item" onclick="handleMenuClick('Find your travelling partner')">
+        <div class="menu-item-icon">👥</div>
+        Find your travelling partner
+      </a>
+      <a href="#" class="menu-item" onclick="handleMenuClick('Maps')">
+        <div class="menu-item-icon">🗺️</div>
+        Maps
+      </a>
+      <a href="#" class="menu-item" onclick="handleMenuClick('Help & Support')">
+        <div class="menu-item-icon">🛟</div>
+        Help & Support
+      </a>
+      <a href="#" class="menu-item" onclick="handleMenuClick('Contact us')">
+        <div class="menu-item-icon">📞</div>
+        Contact us
+      </a>
+    </nav>
+  </div>
+
+  <!-- Sign In Page -->
+  <div id="signinPage" class="panel" style="max-width:400px; margin:auto; margin-top:100px;">
+    <h2 style="text-align:center; margin-bottom:20px;">Sign In</h2>
+    <input type="text" id="username" placeholder="Username" 
+           style="width:100%;padding:12px;margin:8px 0;border-radius:10px;border:1px solid #ccc;">
+    <input type="password" id="password" placeholder="Password" 
+           style="width:100%;padding:12px;margin:8px 0;border-radius:10px;border:1px solid #ccc;">
+    <button onclick="login()" 
+            style="width:100%;padding:12px;background:#024870;color:white;
+                   border:none;border-radius:10px;font-weight:bold;cursor:pointer;">
+      Sign In
+    </button>
+    <p id="errorMsg" style="color:red;text-align:center;margin-top:10px;"></p>
+  </div>
+
+  <!-- Main App (hidden by default) -->
+  <div class="wrapper" id="appWrapper" style="display:none;">
+    <div class="panel">
+      <header>
+        <div>
+          <h1>Explore Your Trip</h1>
+          <p>Hotels • Flights • Things to Do • Restaurants — सब एक जगह</p>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;">
+          <div class="nav-tabs" role="tablist" aria-label="Categories">
+            <button class="tab active" onclick="setActiveTab('Hotels')">Hotels</button>
+            <button class="tab" onclick="setActiveTab('Flights')">Flights</button>
+            <button class="tab" onclick="setActiveTab('Things to Do')">Things to Do</button>
+            <button class="tab" onclick="setActiveTab('Restaurants')">Restaurants</button>
+          </div>
+          <button class="toggle-btn" onclick="toggleDarkMode()">🌙</button>
+        </div>
+      </header>
+
+      <div class="search-row">
+        <input type="text" id="searchInput" placeholder="Search Hotels, Flights, Attractions..." />
+        <button onclick="handleSearch()">Search</button>
+      </div>
+
+      <section id="results" aria-live="polite">
+        <p>You are viewing: <strong>Hotels</strong></p>
+        <p>Search results will appear here.</p>
+      </section>
+
+      <div style="margin-top:20px;text-align:right;">
+        <button onclick="goBack()" style="padding:10px 16px;background:#d9534f;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:600;">← Back</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let sidebarOpen = false;
+
+    function toggleSidebar() {
+      const sidebar = document.querySelector('.sidebar');
+      const overlay = document.querySelector('.overlay');
+      const menuButton = document.querySelector('.menu-button');
+      const wrapper = document.querySelector('.wrapper');
+      
+      sidebarOpen = !sidebarOpen;
+      
+      if (sidebarOpen) {
+        sidebar.classList.add('open');
+        overlay.classList.add('active');
+        menuButton.classList.add('active');
+        wrapper.classList.add('sidebar-open');
+      } else {
+        sidebar.classList.remove('open');
+        overlay.classList.remove('active');
+        menuButton.classList.remove('active');
+        wrapper.classList.remove('sidebar-open');
+      }
+    }
+
+    function closeSidebar() {
+      if (sidebarOpen) {
+        toggleSidebar();
+      }
+    }
+
+    function handleMenuClick(menuItem) {
+      const results = document.getElementById("results");
+      
+      if (document.getElementById("appWrapper").style.display === "none") {
+        // If not logged in, show message
+        alert("Please sign in to access " + menuItem);
+        return;
+      }
+      
+      // Close sidebar
+      closeSidebar();
+      
+      // Show content based on menu item
+      switch(menuItem) {
+        case 'Plan your trip':
+          results.innerHTML = `
+            <p><strong>Plan Your Trip</strong></p>
+            <p>🗓️ Create custom itineraries, book accommodations, and plan your perfect getaway!</p>
+            <div style="background: rgba(2,72,112,0.05); padding: 15px; border-radius: 10px; margin-top: 15px;">
+              <h4 style="margin-top: 0;">Trip Planning Tools:</h4>
+              <ul>
+                <li>Custom itinerary builder</li>
+                <li>Budget calculator</li>
+                <li>Weather forecasts</li>
+                <li>Local events calendar</li>
+              </ul>
+            </div>
+          `;
+          break;
+        case 'Find your travelling partner':
+          results.innerHTML = `
+            <p><strong>Find Your Travelling Partner</strong></p>
+            <p>👥 Connect with like-minded travelers and explore the world together!</p>
+            <div style="background: rgba(2,72,112,0.05); padding: 15px; border-radius: 10px; margin-top: 15px;">
+              <h4 style="margin-top: 0;">Partner Matching:</h4>
+              <ul>
+                <li>Compatible travel preferences</li>
+                <li>Verified traveler profiles</li>
+                <li>Group trip coordination</li>
+                <li>Safe messaging system</li>
+              </ul>
+            </div>
+          `;
+          break;
+        case 'Maps':
+          results.innerHTML = `
+            <p><strong>Interactive Maps</strong></p>
+            <p>🗺️ Explore destinations with our detailed interactive maps and navigation tools!</p>
+            <div style="background: rgba(2,72,112,0.05); padding: 15px; border-radius: 10px; margin-top: 15px;">
+              <h4 style="margin-top: 0;">Map Features:</h4>
+              <ul>
+                <li>Offline map downloads</li>
+                <li>Points of interest</li>
+                <li>Turn-by-turn navigation</li>
+                <li>Local recommendations</li>
+              </ul>
+            </div>
+          `;
+          break;
+        case 'Help & Support':
+          results.innerHTML = `
+            <p><strong>Help & Support</strong></p>
+            <p>🛟 We're here to help! Get assistance with bookings, travel tips, and more.</p>
+            <div style="background: rgba(2,72,112,0.05); padding: 15px; border-radius: 10px; margin-top: 15px;">
+              <h4 style="margin-top: 0;">Support Options:</h4>
+              <ul>
+                <li>24/7 customer support</li>
+                <li>Live chat assistance</li>
+                <li>FAQ and guides</li>
+                <li>Travel emergency support</li>
+              </ul>
+            </div>
+          `;
+          break;
+        case 'Contact us':
+          results.innerHTML = `
+            <p><strong>Contact Us</strong></p>
+            <p>📞 Get in touch with our team for any inquiries or feedback!</p>
+            <div style="background: rgba(2,72,112,0.05); padding: 15px; border-radius: 10px; margin-top: 15px;">
+              <h4 style="margin-top: 0;">Contact Information:</h4>
+              <ul>
+                <li>📧 Email: support@tourismplanner.com</li>
+                <li>📱 Phone: +1 (555) 123-4567</li>
+                <li>💬 Live Chat: Available 24/7</li>
+                <li>📍 Office: 123 Travel Street, City</li>
+              </ul>
+            </div>
+          `;
+          break;
+      }
+    }
+
+    function login() {
+      const user = document.getElementById("username").value.trim();
+      const pass = document.getElementById("password").value.trim();
+      const errorMsg = document.getElementById("errorMsg");
+
+      if(user === "admin" && pass === "1234"){
+        document.getElementById("signinPage").style.display = "none";
+        document.getElementById("appWrapper").style.display = "block";
+      } else {
+        errorMsg.textContent = "Invalid username or password!";
+      }
+    }
+
+    function goBack() {
+      document.getElementById("appWrapper").style.display = "none";
+      document.getElementById("signinPage").style.display = "block";
+      closeSidebar(); // Close sidebar when going back to login
+    }
+
+    function handleSearch() {
+      const input = document.getElementById("searchInput").value;
+      const results = document.getElementById("results");
+
+      if (!input.trim()) {
+        results.innerHTML = "<p style='color:#8aa5b8'>Please enter a search query.</p>";
+        return;
+      }
+
+      results.innerHTML = `<p>Searching for <strong>${escapeHtml(input)}</strong> in the selected category...</p>`;
+
+      setTimeout(() => {
+        results.innerHTML += `<p>Here are the best results for "<strong>${escapeHtml(input)}</strong>".</p>`;
+      }, 700);
+    }
+
+    function setActiveTab(tabName) {
+      const tabs = document.querySelectorAll('.tab');
+      tabs.forEach(tab => tab.classList.remove('active'));
+
+      const clickedTab = Array.from(tabs).find(tab => tab.textContent === tabName);
+      if (clickedTab) clickedTab.classList.add('active');
+
+      const results = document.getElementById("results");
+
+      if(tabName === "Hotels"){
+        results.innerHTML = `<p>You are viewing: <strong>Hotels</strong></p>
+          <div class='card'><img src='https://tse3.mm.bing.net/th/id/OIP.u8u-1yyEK9xIZrsesPpbDwHaE8?rs=1&pid=ImgDetMain&o=7&rm=3' alt='Villa 1'><p>Luxury Villa One</p></div>
+          <div class='card'><img src='https://i.pinimg.com/originals/38/a2/6f/38a26f9bb9e5012fb74a89871a04a5d2.jpg' alt='Villa 2'><p>Beachside Resort</p></div>
+          <div class='card'><img src='https://tse1.mm.bing.net/th/id/OIP.VPgN879BV_KOe5FfGoMafQHaEK?rs=1&pid=ImgDetMain&o=7&rm=3' alt='Villa 3'><p>Elegant Mansion</p></div>`;
+      } else if(tabName === "Flights"){
+        results.innerHTML = `<p>You are viewing: <strong>Flights</strong></p>
+          <div class='card'><img src='https://tse4.mm.bing.net/th/id/OIP.6vtCNWdwDAqYzMPJHVItbwHaE8?rs=1&pid=ImgDetMain&o=7&rm=3' alt='Flight 1'><p>Business Class</p></div>
+          <div class='card'><img src='https://www.singaporeair.com/saar5/images/navigation/flying-withus/cabins/economy-class-737-8.jpg' alt='Flight 2'><p>Economy Deals</p></div>
+          <div class='card'><img src='https://aeroaffaires.com/wp-content/uploads/2019/04/gulfstream_g650_interior_11.jpg' alt='Flight 3'><p>Private Jet</p></div>`;
+      } else if(tabName === "Things to Do"){
+        results.innerHTML = `<p>You are viewing: <strong>Things to Do</strong></p>
+          <div class='card'><img src='https://prometour.com/wp-content/uploads/2019/07/Adventurevolunteering-tour.jpg' alt='Adventure'><p>Adventure Tours</p></div>
+          <div class='card'><img src='https://th.bing.com/th/id/R.cb98037d4f3d8b825ff8c2f7b7e054f5?rik=bHrIeoABLhaDFg&riu=http%3a%2f%2farchitizer-prod.imgix.net%2fmedia%2f1489512290749MET004.jpg%3fw%3d1680%26q%3d60%26auto%3dformat%2ccompress%26cs%3dstrip&ehk=%2fTylGlUph6bACr5n0EAadnPtjywSxiIHOLlPOIm2Wl0%3d&risl=&pid=ImgRaw&r=0' alt='Museum'><p>City Museums</p></div>
+          <div class='card'><img src='https://i.natgeofe.com/n/94ba7d6f-ee09-4913-b9e0-2d3ad0d35ccb/Austriahiketrail.jpg' alt='Hiking'><p>Mountain Hiking</p></div>`;
+      } else if(tabName === "Restaurants"){
+        results.innerHTML = `<p>You are viewing: <strong>Restaurants</strong></p>
+          <div class='card'><img src='https://www.visittreasurelake.com/wp-content/uploads/2017/11/fine-dining-meal.jpg' alt='Restaurant 1'><p>Fine Dining</p></div>
+          <div class='card'><img src='https://i.pinimg.com/originals/39/e0/1d/39e01da65565d44086e48addf310ecf7.jpg' alt='Cafe'><p>Cozy Cafe</p></div>
+          <div class='card'><img src='https://e1.pxfuel.com/desktop-wallpaper/864/236/desktop-wallpaper-indian-street-food-chaat.jpg' alt='Street Food'><p>Street Food</p></div>`;
+      } else {
+        results.innerHTML = `<p>You are viewing: <strong>${escapeHtml(tabName)}</strong></p><p>Use the search box above to find best options.</p>`;
+      }
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/[&<>"']/g, function(m){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[m]); });
+    }
+
+    function toggleDarkMode() {
+      document.body.classList.toggle('dark');
+    }
+
+    // Close sidebar when clicking outside or pressing Escape
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape' && sidebarOpen) {
+        closeSidebar();
+      }
+    });
+  </script>
+
+</body>
+</html>
