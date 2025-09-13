@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>TravelConnect - Chat with Fellow Travelers</title>
+  <style>
+    /* Reset + base */
+    * { 
+      box-sizing: border-box; 
+      margin: 0;
+      padding: 0;
+    }
+    
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      transition: background 0.4s, color 0.4s;
+      position: relative;
+      overflow-x: hidden;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+
+    /* Animated background with parallax clouds */
+    .bg-animation {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+      overflow: hidden;
+    }
+
+    .cloud {
+      position: absolute;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 50px;
+      animation: float 20s infinite ease-in-out;
+    }
+
+    .cloud:before {
+      content: '';
+      position: absolute;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 50px;
+    }
+
+    .cloud:nth-child(1) {
+      width: 100px;
+      height: 40px;
+      top: 20%;
+      left: 10%;
+      animation-delay: 0s;
+    }
+
+    .cloud:nth-child(2) {
+      width: 80px;
+      height: 30px;
+      top: 40%;
+      left: 70%;
+      animation-delay: 2s;
+    }
+
+    .cloud:nth-child(3) {
+      width: 120px;
+      height: 50px;
+      top: 60%;
+      left: 20%;
+      animation-delay: 4s;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateX(0px) translateY(0px); }
+      33% { transform: translateX(30px) translateY(-30px); }
+      66% { transform: translateX(-20px) translateY(20px); }
+    }
+
+    body.dark {
+      background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+    }
+
+    body.dark .cloud {
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    /* Onboarding Modal */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(10px);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 1;
+      transition: opacity 0.5s ease;
+    }
+
+    .modal-overlay.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .onboarding-modal {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(20px);
+      border-radius: 24px;
+      padding: 40px;
+      max-width: 500px;
+      width: 90%;
+      text-align: center;
+      transform: scale(0.9);
+      animation: modalSlideIn 0.6s ease-out forwards;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    }
+
+    @keyframes modalSlideIn {
+      from {
+        transform: scale(0.9) translateY(50px);
+        opacity: 0;
+      }
+      to {
+        transform: scale(1) translateY(0);
+        opacity: 1;
+      }
+    }
+
+    body.dark .onboarding-modal {
+      background: rgba(28, 33, 40, 0.95);
+      color: #e6edf3;
+    }
+
+    .onboarding-modal h2 {
+      color: #667eea;
+      margin-bottom: 20px;
+      font-size: 28px;
+      font-weight: 700;
+    }
+
+    body.dark .onboarding-modal h2 {
+      color: #58a6ff;
+    }
+
+    .form-group {
+      margin: 20px 0;
+      text-align: left;
+      position: relative;
+    }
+
+    .floating-input {
+      width: 100%;
+      padding: 16px 12px 8px 12px;
+      border: 2px solid rgba(102, 126, 234, 0.2);
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.8);
+      font-size: 16px;
+      transition: all 0.3s ease;
+      outline: none;
+    }
+
+    .floating-input:focus {
+      border-color: #667eea;
+      box-shadow: 0 0 20px rgba(102, 126, 234, 0.3);
+      background: rgba(255, 255, 255, 1);
+    }
+
+    body.dark .floating-input {
+      background: rgba(13, 17, 23, 0.8);
+      border-color: rgba(88, 166, 255, 0.2);
+      color: #e6edf3;
+    }
+
+    body.dark .floating-input:focus {
+      border-color: #58a6ff;
+      box-shadow: 0 0 20px rgba(88, 166, 255, 0.3);
+      background: rgba(13, 17, 23, 1);
+    }
+
+    .floating-label {
+      position: absolute;
+      left: 12px;
+      top: 16px;
+      color: #666;
+      font-size: 16px;
+      transition: all 0.3s ease;
+      pointer-events: none;
+    }
+
+    .floating-input:focus + .floating-label,
+    .floating-input:not(:placeholder-shown) + .floating-label {
+      top: 4px;
+      font-size: 12px;
+      color: #667eea;
+      font-weight: 600;
+    }
+
+    body.dark .floating-label {
+      color: #8b949e;
+    }
+
+    body.dark .floating-input:focus + .floating-label,
+    body.dark .floating-input:not(:placeholder-shown) + .floating-label {
+      color: #58a6ff;
+    }
+
+    .cta-button {
+      background: linear-gradient(45deg, #667eea, #764ba2);
+      color: white;
+      border: none;
+      padding: 16px 32px;
+      border-radius: 12px;
+      font-size: 18px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      margin-top: 20px;
+      width: 100%;
+    }
+
+    .cta-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+    }
+
+    body.dark .cta-button {
+      background: linear-gradient(45deg, #238636, #2ea043);
+    }
+
+    /* Main Layout */
+    .app-container {
+      display: none;
+      height: 100vh;
+      padding: 20px;
+      gap: 20px;
+    }
+
+    .app-container.active {
+      display: flex;
+    }
+
+    /* Sidebar for user matches */
+    .sidebar {
+      width: 320px;
+      background: rgba(255, 255, 255, 0.9);
+      backdrop-filter: blur(20px);
+      border-radius: 24px;
+      padding: 24px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+      display: flex;
+      flex-direction: column;
+      max-height: calc(100vh - 40px);
+      overflow: hidden;
+    }
+
+    body.dark .sidebar {
+      background: rgba(28, 33, 40, 0.9);
+      color: #e6edf3;
+    }
+
+    .sidebar h2 {
+      color: #667eea;
+      margin-bottom: 20px;
+      font-size: 22px;
+      font-weight: 700;
+    }
+
+    body.dark .sidebar h2 {
+      color: #58a6ff;
+    }
+
+    .user-search {
+      position: relative;
+      margin-bottom: 20px;
+    }
+
+    .search-input {
+      width: 100%;
+      padding: 12px 16px;
+      border: 2px solid rgba(102, 126, 234, 0.2);
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.8);
+      transition: all 0.3s ease;
+      outline: none;
+    }
+
+    .search-input:focus {
+      border-color: #667eea;
+      box-shadow: 0 0 15px rgba(102, 126, 234, 0.2);
+    }
+
+    body.dark .search-input {
+      background: rgba(13, 17, 23, 0.8);
+      border-color: rgba(88, 166, 255, 0.2);
+      color: #e6edf3;
+    }
+
+    .user-list {
+      flex: 1;
+      overflow-y: auto;
+      margin-bottom: 20px;
+    }
+
+    .user-card {
+      background: rgba(255, 255, 255, 0.7);
+      backdrop-filter: blur(10px);
+      border-radius: 16px;
+      padding: 16px;
+      margin-bottom: 12px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      border: 2px solid transparent;
+      opacity: 0;
+      transform: translateY(20px);
+      animation: slideInUp 0.6s ease-out forwards;
+    }
+
+    .user-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 15px 40px rgba(102, 126, 234, 0.2);
+      border-color: rgba(102, 126, 234, 0.3);
+    }
+
+    .user-card.active {
+      border-color: #667eea;
+      background: rgba(102, 126, 234, 0.1);
+    }
+
+    body.dark .user-card {
+      background: rgba(33, 38, 45, 0.8);
+      color: #e6edf3;
+    }
+
+    body.dark .user-card.active {
+      border-color: #58a6ff;
+      background: rgba(88, 166, 255, 0.1);
+    }
+
+    @keyframes slideInUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .user-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: linear-gradient(45deg, #667eea, #764ba2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 600;
+      margin-right: 12px;
+    }
+
+    .user-info h3 {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .user-info p {
+      font-size: 12px;
+      opacity: 0.7;
+    }
+
+    .user-details {
+      display: flex;
+      align-items: center;
+    }
+
+    /* Chat Panel */
+    .chat-panel {
+      flex: 1;
+      background: rgba(255, 255, 255, 0.9);
+      backdrop-filter: blur(20px);
+      border-radius: 24px;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+      max-height: calc(100vh - 40px);
+    }
+
+    body.dark .chat-panel {
+      background: rgba(28, 33, 40, 0.9);
+      color: #e6edf3;
+    }
+
+    .chat-header {
+      padding: 24px;
+      border-bottom: 1px solid rgba(102, 126, 234, 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    body.dark .chat-header {
+      border-bottom-color: rgba(88, 166, 255, 0.1);
+    }
+
+    .chat-title {
+      font-size: 24px;
+      font-weight: 700;
+      color: #667eea;
+    }
+
+    body.dark .chat-title {
+      color: #58a6ff;
+    }
+
+    .dark-toggle {
+      background: rgba(102, 126, 234, 0.1);
+      border: none;
+      border-radius: 12px;
+      padding: 8px 16px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-size: 18px;
+    }
+
+    .dark-toggle:hover {
+      background: rgba(102, 126, 234, 0.2);
+      transform: scale(1.05);
+    }
+
+    body.dark .dark-toggle {
+      background: rgba(88, 166, 255, 0.1);
+    }
+
+    .chat-messages {
+      flex: 1;
+      padding: 24px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .message {
+      max-width: 70%;
+      padding: 16px 20px;
+      border-radius: 20px;
+      position: relative;
+      opacity: 0;
+      transform: scale(0.8) translateY(20px);
+      animation: messageSlideIn 0.4s ease-out forwards;
+    }
+
+    @keyframes messageSlideIn {
+      from {
+        opacity: 0;
+        transform: scale(0.8) translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+      }
+    }
+
+    .message.sent {
+      background: linear-gradient(45deg, #667eea, #764ba2);
+      color: white;
+      align-self: flex-end;
+      border-bottom-right-radius: 8px;
+    }
+
+    .message.received {
+      background: rgba(102, 126, 234, 0.1);
+      align-self: flex-start;
+      border-bottom-left-radius: 8px;
+    }
+
+    body.dark .message.received {
+      background: rgba(88, 166, 255, 0.1);
+      color: #e6edf3;
+    }
+
+    body.dark .message.sent {
+      background: linear-gradient(45deg, #238636, #2ea043);
+    }
+
+    .message-time {
+      font-size: 10px;
+      opacity: 0.6;
+      margin-top: 4px;
+    }
+
+    .chat-input {
+      padding: 24px;
+      border-top: 1px solid rgba(102, 126, 234, 0.1);
+      display: flex;
+      gap: 16px;
+      align-items: center;
+    }
+
+    body.dark .chat-input {
+      border-top-color: rgba(88, 166, 255, 0.1);
+    }
+
+    .message-input {
+      flex: 1;
+      padding: 16px 20px;
+      border: 2px solid rgba(102, 126, 234, 0.2);
+      border-radius: 25px;
+      background: rgba(255, 255, 255, 0.8);
+      outline: none;
+      font-size: 16px;
+      transition: all 0.3s ease;
+    }
+
+    .message-input:focus {
+      border-color: #667eea;
+      box-shadow: 0 0 20px rgba(102, 126, 234, 0.2);
+    }
+
+    body.dark .message-input {
+      background: rgba(13, 17, 23, 0.8);
+      border-color: rgba(88, 166, 255, 0.2);
+      color: #e6edf3;
+    }
+
+    .send-button {
+      background: linear-gradient(45deg, #667eea, #764ba2);
+      border: none;
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      color: white;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-size: 20px;
+    }
+
+    .send-button:hover {
+      transform: scale(1.1);
+      box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+    }
+
+    body.dark .send-button {
+      background: linear-gradient(45deg, #238636, #2ea043);
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+      .app-container {
+        flex-direction: column;
+        padding: 10px;
+      }
+      
+      .sidebar {
+        width: 100%;
+        height: 200px;
+        margin-bottom: 10px;
+      }
+      
+      .user-list {
+        display: flex;
+        overflow-x: auto;
+        margin-bottom: 10px;
+      }
+      
+      .user-card {
+        min-width: 200px;
+        margin-right: 12px;
+        margin-bottom: 0;
+      }
+      
+      .chat-panel {
+        height: calc(100vh - 240px);
+      }
+    }
+
+    /* Login Panel Styling */
+    #signinPage {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      max-width: 400px;
+      width: 90%;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(20px);
+      border-radius: 24px;
+      padding: 40px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      animation: slideInUp 0.6s ease-out;
+    }
+
+    body.dark #signinPage {
+      background: rgba(28, 33, 40, 0.95);
+      color: #e6edf3;
+    }
+
+    #signinPage h2 {
+      color: #667eea;
+      text-align: center;
+      margin-bottom: 30px;
+      font-size: 28px;
+      font-weight: 700;
+    }
+
+    body.dark #signinPage h2 {
+      color: #58a6ff;
+    }
+
+    #signinPage input {
+      width: 100%;
+      padding: 16px;
+      margin: 12px 0;
+      border: 2px solid rgba(102, 126, 234, 0.2);
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.8);
+      font-size: 16px;
+      transition: all 0.3s ease;
+      outline: none;
+    }
+
+    #signinPage input:focus {
+      border-color: #667eea;
+      box-shadow: 0 0 20px rgba(102, 126, 234, 0.3);
+    }
+
+    body.dark #signinPage input {
+      background: rgba(13, 17, 23, 0.8);
+      border-color: rgba(88, 166, 255, 0.2);
+      color: #e6edf3;
+    }
+
+    #signinPage button {
+      width: 100%;
+      padding: 16px;
+      background: linear-gradient(45deg, #667eea, #764ba2);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-size: 18px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      margin-top: 10px;
+    }
+
+    #signinPage button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+    }
+
+    body.dark #signinPage button {
+      background: linear-gradient(45deg, #238636, #2ea043);
+    }
+
+    #errorMsg {
+      color: #e74c3c;
+      text-align: center;
+      margin-top: 15px;
+      font-size: 14px;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    #errorMsg.show {
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <!-- Animated Background -->
+  <div class="bg-animation">
+    <div class="cloud"></div>
+    <div class="cloud"></div>
+    <div class="cloud"></div>
+  </div>
+
+  <!-- Onboarding Modal -->
+  <div class="modal-overlay" id="onboardingModal">
+    <div class="onboarding-modal">
+      <h2>🌍 Welcome to TravelConnect!</h2>
+      <p style="margin-bottom: 30px; font-size: 16px; line-height: 1.6;">Connect with fellow travelers heading to your destination. Share experiences, tips, and maybe find a travel buddy!</p>
+      
+      <div class="form-group">
+        <input type="text" class="floating-input" id="userDestination" placeholder=" ">
+        <label class="floating-label">Where are you traveling?</label>
+      </div>
+      
+      <div class="form-group">
+        <input type="date" class="floating-input" id="userTravelDate" placeholder=" ">
+        <label class="floating-label">Travel Date</label>
+      </div>
+      
+      <div class="form-group">
+        <input type="text" class="floating-input" id="userTravelName" placeholder=" ">
+        <label class="floating-label">Your Name</label>
+      </div>
+      
+      <button class="cta-button" onclick="completeOnboarding()">Start Connecting! 🚀</button>
+    </div>
+  </div>
+
+  <!-- Login Page -->
+  <div id="signinPage">
+    <h2>🌟 TravelConnect</h2>
+    <input type="text" id="username" placeholder="Username">
+    <input type="password" id="password" placeholder="Password">
+    <button onclick="login()">Sign In</button>
+    <p id="errorMsg"></p>
+  </div>
+
+  <!-- Main App -->
+  <div class="app-container" id="appContainer">
+    <!-- Sidebar with User Matches -->
+    <div class="sidebar">
+      <h2>👥 Fellow Travelers</h2>
+      <div class="user-search">
+        <input type="text" class="search-input" placeholder="Search by destination..." id="userSearchInput">
+      </div>
+      <div class="user-list" id="userList">
+        <!-- User cards will be generated here -->
+      </div>
+      <button class="cta-button" onclick="showOnboarding()">Update Travel Plans</button>
+    </div>
+
+    <!-- Chat Panel -->
+    <div class="chat-panel">
+      <div class="chat-header">
+        <div class="chat-title" id="chatTitle">Select a traveler to start chatting</div>
+        <button class="dark-toggle" onclick="toggleDarkMode()">🌙</button>
+      </div>
+      
+      <div class="chat-messages" id="chatMessages">
+        <div style="text-align: center; opacity: 0.6; padding: 60px 20px;">
+          <div style="font-size: 48px; margin-bottom: 20px;">💬</div>
+          <h3>Welcome to TravelConnect!</h3>
+          <p>Select a fellow traveler from the sidebar to start chatting and sharing travel experiences.</p>
+        </div>
+      </div>
+      
+      <div class="chat-input" id="chatInput" style="display: none;">
+        <input type="text" class="message-input" id="messageInput" placeholder="Type your message...">
+        <button class="send-button" onclick="sendMessage()">➤</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Sample travel data
+    const travelers = [
+      { id: 1, name: "Sarah Chen", destination: "Tokyo, Japan", date: "2024-12-15", avatar: "SC", interests: ["Food", "Culture"] },
+      { id: 2, name: "Marco Silva", destination: "Paris, France", date: "2024-12-20", avatar: "MS", interests: ["Art", "History"] },
+      { id: 3, name: "Priya Sharma", destination: "Bali, Indonesia", date: "2024-12-10", avatar: "PS", interests: ["Beach", "Adventure"] },
+      { id: 4, name: "Alex Johnson", destination: "New York, USA", date: "2025-01-05", avatar: "AJ", interests: ["Shopping", "Broadway"] },
+      { id: 5, name: "Emma Wilson", destination: "London, UK", date: "2024-12-25", avatar: "EW", interests: ["Museums", "Tea"] },
+      { id: 6, name: "Carlos Rodriguez", destination: "Barcelona, Spain", date: "2025-01-10", avatar: "CR", interests: ["Architecture", "Food"] }
+    ];
+
+    let currentUser = null;
+    let activeChat = null;
+    let userTravelInfo = { destination: '', date: '', name: '' };
+    let chatHistory = {};
+
+    // Initialize sample messages
+    function initializeSampleMessages() {
+      travelers.forEach(traveler => {
+        chatHistory[traveler.id] = [
+          {
+            text: `Hey! I saw you're also traveling to ${traveler.destination}. Any tips?`,
+            sent: false,
+            time: new Date(Date.now() - Math.random() * 86400000).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
+          }
+        ];
+      });
+    }
+
+    function login() {
+      const user = document.getElementById("username").value.trim();
+      const pass = document.getElementById("password").value.trim();
+      const errorMsg = document.getElementById("errorMsg");
+
+      if(user === "admin" && pass === "1234"){
+        document.getElementById("signinPage").style.display = "none";
+        showOnboarding();
+      } else {
+        errorMsg.textContent = "Invalid username or password!";
+        errorMsg.classList.add("show");
+        setTimeout(() => errorMsg.classList.remove("show"), 3000);
+      }
+    }
+
+    function showOnboarding() {
+      document.getElementById("onboardingModal").classList.remove("hidden");
+    }
+
+    function completeOnboarding() {
+      const destination = document.getElementById("userDestination").value.trim();
+      const date = document.getElementById("userTravelDate").value;
+      const name = document.getElementById("userTravelName").value.trim();
+
+      if (!destination || !date || !name) {
+        alert("Please fill in all fields!");
+        return;
+      }
+
+      userTravelInfo = { destination, date, name };
+      document.getElementById("onboardingModal").classList.add("hidden");
+      document.getElementById("appContainer").classList.add("active");
+      
+      initializeSampleMessages();
+      generateUserCards();
+    }
+
+    function generateUserCards() {
+      const userList = document.getElementById("userList");
+      userList.innerHTML = "";
+
+      travelers.forEach((traveler, index) => {
+        const userCard = document.createElement("div");
+        userCard.className = "user-card";
+        userCard.style.animationDelay = `${index * 0.1}s`;
+        userCard.onclick = () => selectUser(traveler);
+
+        const isMatching = traveler.destination.toLowerCase().includes(userTravelInfo.destination.toLowerCase()) || 
+                          userTravelInfo.destination.toLowerCase().includes(traveler.destination.toLowerCase());
+
+        userCard.innerHTML = `
+          <div class="user-details">
+            <div class="user-avatar">${traveler.avatar}</div>
+            <div class="user-info">
+              <h3>${traveler.name} ${isMatching ? '⭐' : ''}</h3>
+              <p>📍 ${traveler.destination}</p>
+              <p>🗓️ ${new Date(traveler.date).toLocaleDateString()}</p>
+              <p style="font-size: 10px; margin-top: 4px;">${traveler.interests.join(', ')}</p>
+            </div>
+          </div>
+        `;
+
+        userList.appendChild(userCard);
+      });
+    }
+
+    function selectUser(traveler) {
+      // Remove active class from all cards
+      document.querySelectorAll('.user-card').forEach(card => {
+        card.classList.remove('active');
+      });
+
+      // Add active class to selected card
+      event.target.closest('.user-card').classList.add('active');
+
+      activeChat = traveler;
+      document.getElementById("chatTitle").textContent = `💬 ${traveler.name}`;
+      document.getElementById("chatInput").style.display = "flex";
+      
+      loadChatHistory(traveler.id);
+    }
+
+    function loadChatHistory(userId) {
+      const chatMessages = document.getElementById("chatMessages");
+      chatMessages.innerHTML = "";
+
+      if (!chatHistory[userId]) {
+        chatHistory[userId] = [];
+      }
+
+      chatHistory[userId].forEach((message, index) => {
+        setTimeout(() => {
+          addMessageToChat(message.text, message.sent, message.time);
+        }, index * 200);
+      });
+    }
+
+    function sendMessage() {
+      const messageInput = document.getElementById("messageInput");
+      const text = messageInput.value.trim();
+
+      if (!text || !activeChat) return;
+
+      const time = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+      
+      // Add to chat history
+      if (!chatHistory[activeChat.id]) {
+        chatHistory[activeChat.id] = [];
+      }
+      chatHistory[activeChat.id].push({ text, sent: true, time });
+
+      // Display message
+      addMessageToChat(text, true, time);
+      
